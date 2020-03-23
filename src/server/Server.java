@@ -21,7 +21,7 @@ public class Server {
         Socket socket = null;
 
         try {
-            server = new ServerSocket(17089);
+            server = new ServerSocket(19089);
             System.out.println("Сервер работает");
 
             while (true) {
@@ -45,24 +45,53 @@ public class Server {
             }
         }
     }
-    public void broadcastMsg (String msg, String nick){
+    public void broadcastMsg (String nick, String msg){
         for (ClientHandler c:clients) {
             c.sendMsg(nick + ":" + "\n" + msg);
         }
     }
+
+    public void privatMsg (ClientHandler sender, String receiver, String msg){
+        for (ClientHandler c:clients) {
+            String message = String.format("[ %s ] private [ %s ] : %s",
+                    sender.getNick(), receiver, msg);
+            if (sender.getNick().equals(receiver)){
+                sender.sendMsg(msg);
+                return;
+            }
+            if (c.getNick().equals(receiver)){
+                c.sendMsg(message);
+                sender.sendMsg(message);
+                return;
+            }
+            sender.sendMsg("Not found user " + receiver);
+        }
+    }
+
     public void subscribe (ClientHandler clientHandler){
         clients.add(clientHandler);
+        broadcastClientList();
     }
     public void unsubscribe (ClientHandler clientHandler){
         clients.remove(clientHandler);
+        broadcastClientList();
     }
-    public void wisperMsg(ClientHandler from, String to, String msg){
+    public boolean isLoginAuthorised(String login){
         for (ClientHandler c:clients) {
-            if(c.getClientName().equals(to)) {
-                c.sendMsg("Сообщение от " + from.getClientName() + ":" + "\n" + msg);
-                break;
+            if (c.getLogin().equals(login)){
+                return true;
             }
         }
-        from.sendMsg("Сообщение для " + to + ":" + "\n" + msg);
+        return false;
+    }
+    public void broadcastClientList (){
+        StringBuilder sb = new StringBuilder("/clientlist ");
+        for (ClientHandler c:clients) {
+            sb.append(c.getNick()+ " ");
+        }
+        String msg = sb.toString();
+        for (ClientHandler c:clients) {
+            c.sendMsg(msg);
+        }
     }
 }
