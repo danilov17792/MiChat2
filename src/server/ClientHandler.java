@@ -25,6 +25,7 @@ public class ClientHandler {
             new Thread(() -> {
 
                 try {
+                    socket.setSoTimeout(3000);
                     while (true) {
                         String str = in.readUTF();
                         if (str.startsWith("/reg ")) {
@@ -52,6 +53,7 @@ public class ClientHandler {
                                 if (!server.isLoginAuthorised(login)) {
                                     sendMsg("/authok " + newNick);
                                     nick = newNick;
+                                    socket.setSoTimeout(0);
                                     server.subscribe(this);
                                     System.out.println("Клиент " + newNick + " авторизовался");
                                     break;
@@ -82,6 +84,14 @@ public class ClientHandler {
                             server.broadcastMsg(nick, str);
                         }
                     }
+                }catch (SocketTimeoutException exception){
+                    try {
+                        out.writeUTF("/end");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("Сокет " + socket.getRemoteSocketAddress()+ " свободен");
+                    System.out.println("Истек Timeout подключения");
                 }catch (RuntimeException e){
                     System.out.println(e.getMessage());
                 } catch (IOException e) {
